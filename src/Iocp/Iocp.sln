@@ -9,6 +9,14 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "IocpApiTest", "IocpApiTest\
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "IocpThreadPool", "IocpThreadPool\IocpThreadPool.csproj", "{D4C1F201-2421-4E04-BFB7-CC60D6529E4C}"
 EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Iocp", "Iocp", "{E745755D-0EFC-463F-A188-5927F9BB5956}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Socket", "Socket", "{B0060AFD-F168-4018-B52A-26A0341C322F}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Other", "Other", "{180E8AB0-E56E-4EC8-93C4-CED950F426AB}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AsyncSocketServer", "AsyncSocketServer\AsyncSocketServer.csproj", "{F7FBECAA-DF4F-4B92-9E5E-7AB0F2ACA409}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -27,8 +35,18 @@ Global
 		{D4C1F201-2421-4E04-BFB7-CC60D6529E4C}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{D4C1F201-2421-4E04-BFB7-CC60D6529E4C}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{D4C1F201-2421-4E04-BFB7-CC60D6529E4C}.Release|Any CPU.Build.0 = Release|Any CPU
+		{F7FBECAA-DF4F-4B92-9E5E-7AB0F2ACA409}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{F7FBECAA-DF4F-4B92-9E5E-7AB0F2ACA409}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{F7FBECAA-DF4F-4B92-9E5E-7AB0F2ACA409}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{F7FBECAA-DF4F-4B92-9E5E-7AB0F2ACA409}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{A6163B14-94F4-4117-B2BA-07002003A4CD} = {180E8AB0-E56E-4EC8-93C4-CED950F426AB}
+		{6EE984C1-5F4E-4099-9E60-B245EA28227A} = {E745755D-0EFC-463F-A188-5927F9BB5956}
+		{D4C1F201-2421-4E04-BFB7-CC60D6529E4C} = {E745755D-0EFC-463F-A188-5927F9BB5956}
+		{F7FBECAA-DF4F-4B92-9E5E-7AB0F2ACA409} = {B0060AFD-F168-4018-B52A-26A0341C322F}
 	EndGlobalSection
 EndGlobal

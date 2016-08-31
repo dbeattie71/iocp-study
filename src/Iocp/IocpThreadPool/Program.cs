@@ -10,9 +10,7 @@ namespace IocpThreadPool
             // Create the MSSQL IOCP Thread Pool
             var pThreadPool = new SafeIocpThreadPool(0, 5, 10, IocpThreadFunction);
             for (var i = 0; i < 100; i++)
-            {
-                pThreadPool.PostEvent(new MyData { Value = i });
-            }
+                pThreadPool.PostEvent(new MyData {Value = i});
 
             pThreadPool.Dispose();
             Console.WriteLine("Disposed");
