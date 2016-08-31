@@ -1,11 +1,4 @@
-﻿using Microsoft.Win32.SafeHandles;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Runtime.InteropServices;
-using System.Text;
-using System.Threading.Tasks;
-using System.Threading;
+﻿using System;
 
 namespace IocpApiTest
 {
@@ -13,6 +6,8 @@ namespace IocpApiTest
     {
         static void Main(string[] args)
         {
+            IocpApi.TestIocpApi();
+            Console.ReadKey();
         }
     }
 }
