@@ -38,7 +38,7 @@ namespace IocpApiTest
             var ioData2 = new IOData();
             var gch2 = GCHandle.Alloc(ioData2);
             ioData2.Data = "关闭工作线程吧";
-            Console.WriteLine("{0}-主线程发送输出", Thread.CurrentThread.GetHashCode());
+            Console.WriteLine("{0}-主线程发送数据", Thread.CurrentThread.GetHashCode());
             PostQueuedCompletionStatus(completionPort, 4, IntPtr.Zero, (IntPtr) gch2);
             Console.WriteLine("主线程执行完毕");
             Console.ReadKey();
