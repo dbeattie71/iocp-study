@@ -77,8 +77,8 @@ namespace AsyncSocketServer
         /// </summary>  
         /// <param name="listenPort">监听的端口</param>  
         /// <param name="maxClient">最大的客户端数量</param>  
-        public Server(int listenPort, int maxClient)  
-            : this(IPAddress.Any, listenPort, maxClient)  
+        public Server(int listenPort, int maxClient)
+            : this(IPAddress.Any, listenPort, maxClient)
         {
         }
 
@@ -87,8 +87,8 @@ namespace AsyncSocketServer
         /// </summary>  
         /// <param name="localEP">监听的终结点</param>  
         /// <param name="maxClient">最大客户端数量</param>  
-        public Server(IPEndPoint localEP, int maxClient)  
-            : this(localEP.Address, localEP.Port,maxClient)  
+        public Server(IPEndPoint localEP, int maxClient)
+            : this(localEP.Address, localEP.Port, maxClient)
         {
         }
 
