@@ -1,8 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace AsyncSocketServer
 {
@@ -10,6 +6,10 @@ namespace AsyncSocketServer
     {
         static void Main(string[] args)
         {
+            var server = new ServerCore(8088, 1024);
+            server.Start();
+            Console.WriteLine("服务器已启动....");
+            Console.ReadLine();
         }
     }
 }
