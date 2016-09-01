@@ -100,9 +100,9 @@ namespace AsyncSocketServer
         /// <param name="maxClient">最大客户端数量</param>  
         public ServerCore(IPAddress localIPAddress, int listenPort, int maxClient)
         {
-            this.Address = localIPAddress;
-            this.Port = listenPort;
-            this.Encoding = Encoding.Default;
+            Address = localIPAddress;
+            Port = listenPort;
+            Encoding = Encoding.Default;
 
             _maxClient = maxClient;
 
@@ -177,7 +177,7 @@ namespace AsyncSocketServer
                     _serverSock.Bind(localEndPoint);
                 }
                 // 开始监听  
-                _serverSock.Listen(this._maxClient);
+                _serverSock.Listen(_maxClient);
                 // 在监听Socket上投递一个接受请求。  
                 StartAccept(null);
             }
@@ -257,7 +257,7 @@ namespace AsyncSocketServer
                         SocketAsyncEventArgs asyniar = _objectPool.Pop();
                         asyniar.UserToken = s;
 
-                        Log4Debug(String.Format("客户 {0} 连入, 共有 {1} 个连接。", s.RemoteEndPoint.ToString(), _clientCount));
+                        Log4Debug(string.Format("客户 {0} 连入, 共有 {1} 个连接。", s.RemoteEndPoint.ToString(), _clientCount));
 
                         if (!s.ReceiveAsync(asyniar))//投递接收请求  
                         {
@@ -266,7 +266,7 @@ namespace AsyncSocketServer
                     }
                     catch (SocketException ex)
                     {
-                        Log4Debug(String.Format("接收客户 {0} 数据出错, 异常信息： {1} 。", s.RemoteEndPoint, ex.ToString()));
+                        Log4Debug(string.Format("接收客户 {0} 数据出错, 异常信息： {1} 。", s.RemoteEndPoint, ex.ToString()));
                         //TODO 异常处理  
                     }
                     //投递下一个接受请求  
@@ -395,7 +395,7 @@ namespace AsyncSocketServer
                         Array.Copy(e.Buffer, e.Offset, data, 0, data.Length);//从e.Buffer块中复制数据出来，保证它可重用  
 
                         string info = Encoding.Default.GetString(data);
-                        Log4Debug(String.Format("收到 {0} 数据为 {1}", s.RemoteEndPoint.ToString(), info));
+                        Log4Debug(string.Format("收到 {0} 数据为 {1}", s.RemoteEndPoint.ToString(), info));
                         //TODO 处理数据  
 
                         //增加服务器接收的总字节数。  
@@ -448,7 +448,7 @@ namespace AsyncSocketServer
         /// <param name="e">SocketAsyncEventArg associated with the completed send/receive operation.</param>  
         private void CloseClientSocket(SocketAsyncEventArgs e)
         {
-            Log4Debug(String.Format("客户 {0} 断开连接!", ((Socket)e.UserToken).RemoteEndPoint.ToString()));
+            Log4Debug(string.Format("客户 {0} 断开连接!", ((Socket)e.UserToken).RemoteEndPoint.ToString()));
             Socket s = e.UserToken as Socket;
             CloseClientSocket(s, e);
         }
@@ -497,7 +497,7 @@ namespace AsyncSocketServer
         /// to release only unmanaged resources.</param>  
         protected virtual void Dispose(bool disposing)
         {
-            if (!this.disposed)
+            if (!disposed)
             {
                 if (disposing)
                 {
