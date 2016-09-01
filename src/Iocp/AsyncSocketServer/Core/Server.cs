@@ -155,31 +155,30 @@ namespace AsyncSocketServer.Core
         /// </summary>  
         public void Start()
         {
-            if (!IsRunning)
+            if (IsRunning) return;
+
+            Init();
+            IsRunning = true;
+            var localEndPoint = new IPEndPoint(Address, Port);
+            // 创建监听socket  
+            _serverSock = new Socket(localEndPoint.AddressFamily, SocketType.Stream, ProtocolType.Tcp);
+            //_serverSock.ReceiveBufferSize = _bufferSize;  
+            //_serverSock.SendBufferSize = _bufferSize;  
+            if (localEndPoint.AddressFamily == AddressFamily.InterNetworkV6)
             {
-                Init();
-                IsRunning = true;
-                IPEndPoint localEndPoint = new IPEndPoint(Address, Port);
-                // 创建监听socket  
-                _serverSock = new Socket(localEndPoint.AddressFamily, SocketType.Stream, ProtocolType.Tcp);
-                //_serverSock.ReceiveBufferSize = _bufferSize;  
-                //_serverSock.SendBufferSize = _bufferSize;  
-                if (localEndPoint.AddressFamily == AddressFamily.InterNetworkV6)
-                {
-                    // 配置监听socket为 dual-mode (IPv4 & IPv6)   
-                    // 27 is equivalent to IPV6_V6ONLY socket option in the winsock snippet below,  
-                    _serverSock.SetSocketOption(SocketOptionLevel.IPv6, (SocketOptionName)27, false);
-                    _serverSock.Bind(new IPEndPoint(IPAddress.IPv6Any, localEndPoint.Port));
-                }
-                else
-                {
-                    _serverSock.Bind(localEndPoint);
-                }
-                // 开始监听  
-                _serverSock.Listen(_maxClient);
-                // 在监听Socket上投递一个接受请求。  
-                StartAccept(null);
+                // 配置监听socket为 dual-mode (IPv4 & IPv6)   
+                // 27 is equivalent to IPV6_V6ONLY socket option in the winsock snippet below,  
+                _serverSock.SetSocketOption(SocketOptionLevel.IPv6, (SocketOptionName)27, false);
+                _serverSock.Bind(new IPEndPoint(IPAddress.IPv6Any, localEndPoint.Port));
             }
+            else
+            {
+                _serverSock.Bind(localEndPoint);
+            }
+            // 开始监听  
+            _serverSock.Listen(_maxClient);
+            // 在监听Socket上投递一个接受请求。  
+            StartAccept(null);
         }
         #endregion
 
@@ -249,7 +248,6 @@ namespace AsyncSocketServer.Core
             if (!s.Connected) return;
             try
             {
-
                 Interlocked.Increment(ref _clientCount);//原子操作加1  
                 var asyniar = _objectPool.Pop();
                 asyniar.UserToken = s;
@@ -281,24 +279,20 @@ namespace AsyncSocketServer.Core
         /// <param name="data"></param>  
         public void Send(SocketAsyncEventArgs e, byte[] data)
         {
-            if (e.SocketError == SocketError.Success)
-            {
-                Socket s = e.AcceptSocket;//和客户端关联的socket  
-                if (s.Connected)
-                {
-                    Array.Copy(data, 0, e.Buffer, 0, data.Length);//设置发送数据  
+            if (e.SocketError != SocketError.Success) return;
+            var s = e.AcceptSocket;//和客户端关联的socket  
+            if (!s.Connected) return;
+            Array.Copy(data, 0, e.Buffer, 0, data.Length);//设置发送数据  
 
-                    //e.SetBuffer(data, 0, data.Length); //设置发送数据  
-                    if (!s.SendAsync(e))//投递发送请求，这个函数有可能同步发送出去，这时返回false，并且不会引发SocketAsyncEventArgs.Completed事件  
-                    {
-                        // 同步发送时处理发送完成事件  
-                        ProcessSend(e);
-                    }
-                    else
-                    {
-                        CloseClientSocket(e);
-                    }
-                }
+            //e.SetBuffer(data, 0, data.Length); //设置发送数据  
+            if (!s.SendAsync(e))//投递发送请求，这个函数有可能同步发送出去，这时返回false，并且不会引发SocketAsyncEventArgs.Completed事件  
+            {
+                // 同步发送时处理发送完成事件  
+                ProcessSend(e);
+            }
+            else
+            {
+                CloseClientSocket(e);
             }
         }
 
