@@ -5,7 +5,7 @@ using System.Threading;
 
 namespace AsyncSocketClient
 {
-    public class IocpClientCore
+    public class IocpClient
     {
         /// <summary>  
         /// 连接服务器的socket  
@@ -34,7 +34,7 @@ namespace AsyncSocketClient
         /// </summary>  
         private IPEndPoint _remoteEndPoint;
 
-        public IocpClientCore(IPEndPoint local, IPEndPoint remote)
+        public IocpClient(IPEndPoint local, IPEndPoint remote)
         {
             _clientSock = new Socket(local.AddressFamily, SocketType.Stream, ProtocolType.Tcp);
             _remoteEndPoint = remote;

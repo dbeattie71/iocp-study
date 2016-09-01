@@ -4,7 +4,7 @@ using System.Text;
 
 namespace AsyncSocketClient
 {
-    public class ClientCore
+    public class Client
     {
         public TcpClient _client;
 
@@ -12,7 +12,7 @@ namespace AsyncSocketClient
 
         public IPAddress remote;
 
-        public ClientCore(int port, IPAddress remote)
+        public Client(int port, IPAddress remote)
         {
 
             this.port = port;

@@ -43,8 +43,8 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="ClientCore.cs" />
-    <Compile Include="IocpClientCore.cs" />
+    <Compile Include="Client.cs" />
+    <Compile Include="IocpClient.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
