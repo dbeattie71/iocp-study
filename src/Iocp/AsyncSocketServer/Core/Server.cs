@@ -4,16 +4,16 @@ using System.Net.Sockets;
 using System.Text;
 using System.Threading;
 
-namespace AsyncSocketServer
+namespace AsyncSocketServer.Core
 {
     public class Server : IDisposable
     {
-        const int opsToPreAlloc = 2;
+        private const int OpsToPreAlloc = 2;
         #region Fields  
         /// <summary>  
         /// 服务器程序允许的最大客户端连接数  
         /// </summary>  
-        private int _maxClient;
+        private readonly int _maxClient;
 
         /// <summary>  
         /// 监听Socket，用于接受客户端的连接请求  
@@ -28,24 +28,24 @@ namespace AsyncSocketServer
         /// <summary>  
         /// 用于每个I/O Socket操作的缓冲区大小  
         /// </summary>  
-        private int _bufferSize = 1024;
+        private readonly int _bufferSize = 1024;
 
         /// <summary>  
         /// 信号量  
         /// </summary>  
-        Semaphore _maxAcceptedClients;
+        private readonly Semaphore _maxAcceptedClients;
 
         /// <summary>  
         /// 缓冲区管理  
         /// </summary>  
-        BufferManager _bufferManager;
+        private readonly BufferManager _bufferManager;
 
         /// <summary>  
         /// 对象池  
         /// </summary>  
-        SocketAsyncEventArgsPool _objectPool;
+        private readonly SocketAsyncEventArgsPool _objectPool;
 
-        private bool disposed = false;
+        private bool _disposed;
 
         #endregion
 
@@ -108,7 +108,7 @@ namespace AsyncSocketServer
 
             _serverSock = new Socket(localIPAddress.AddressFamily, SocketType.Stream, ProtocolType.Tcp);
 
-            _bufferManager = new BufferManager(_bufferSize * _maxClient * opsToPreAlloc, _bufferSize);
+            _bufferManager = new BufferManager(_bufferSize * _maxClient * OpsToPreAlloc, _bufferSize);
 
             _objectPool = new SocketAsyncEventArgsPool(_maxClient);
 
@@ -130,13 +130,12 @@ namespace AsyncSocketServer
             _bufferManager.InitBuffer();
 
             // preallocate pool of SocketAsyncEventArgs objects  
-            SocketAsyncEventArgs readWriteEventArg;
 
-            for (int i = 0; i < _maxClient; i++)
+            for (var i = 0; i < _maxClient; i++)
             {
                 //Pre-allocate a set of reusable SocketAsyncEventArgs  
-                readWriteEventArg = new SocketAsyncEventArgs();
-                readWriteEventArg.Completed += new EventHandler<SocketAsyncEventArgs>(OnIOCompleted);
+                var readWriteEventArg = new SocketAsyncEventArgs();
+                readWriteEventArg.Completed += OnIOCompleted;
                 readWriteEventArg.UserToken = null;
 
                 // assign a byte buffer from the buffer pool to the SocketAsyncEventArg object  
@@ -213,7 +212,7 @@ namespace AsyncSocketServer
             if (asyniar == null)
             {
                 asyniar = new SocketAsyncEventArgs();
-                asyniar.Completed += new EventHandler<SocketAsyncEventArgs>(OnAcceptCompleted);
+                asyniar.Completed += OnAcceptCompleted;
             }
             else
             {
@@ -245,34 +244,30 @@ namespace AsyncSocketServer
         /// <param name="e">SocketAsyncEventArg associated with the completed accept operation.</param>  
         private void ProcessAccept(SocketAsyncEventArgs e)
         {
-            if (e.SocketError == SocketError.Success)
+            if (e.SocketError != SocketError.Success) return;
+            var s = e.AcceptSocket;//和客户端关联的socket  
+            if (!s.Connected) return;
+            try
             {
-                Socket s = e.AcceptSocket;//和客户端关联的socket  
-                if (s.Connected)
+
+                Interlocked.Increment(ref _clientCount);//原子操作加1  
+                var asyniar = _objectPool.Pop();
+                asyniar.UserToken = s;
+
+                Log4Debug($"客户 {s.RemoteEndPoint} 连入, 共有 {_clientCount} 个连接。");
+
+                if (!s.ReceiveAsync(asyniar))//投递接收请求  
                 {
-                    try
-                    {
-
-                        Interlocked.Increment(ref _clientCount);//原子操作加1  
-                        SocketAsyncEventArgs asyniar = _objectPool.Pop();
-                        asyniar.UserToken = s;
-
-                        Log4Debug(string.Format("客户 {0} 连入, 共有 {1} 个连接。", s.RemoteEndPoint.ToString(), _clientCount));
-
-                        if (!s.ReceiveAsync(asyniar))//投递接收请求  
-                        {
-                            ProcessReceive(asyniar);
-                        }
-                    }
-                    catch (SocketException ex)
-                    {
-                        Log4Debug(string.Format("接收客户 {0} 数据出错, 异常信息： {1} 。", s.RemoteEndPoint, ex.ToString()));
-                        //TODO 异常处理  
-                    }
-                    //投递下一个接受请求  
-                    StartAccept(e);
+                    ProcessReceive(asyniar);
                 }
             }
+            catch (SocketException ex)
+            {
+                Log4Debug($"接收客户 {s.RemoteEndPoint} 数据出错, 异常信息： {ex} 。");
+                //TODO 异常处理  
+            }
+            //投递下一个接受请求  
+            StartAccept(e);
         }
 
         #endregion
@@ -318,8 +313,8 @@ namespace AsyncSocketServer
         public void Send(Socket socket, byte[] buffer, int offset, int size, int timeout)
         {
             socket.SendTimeout = 0;
-            int startTickCount = Environment.TickCount;
-            int sent = 0; // how many bytes is already sent  
+            var startTickCount = Environment.TickCount;
+            var sent = 0; // how many bytes is already sent  
             do
             {
                 if (Environment.TickCount > startTickCount + timeout)
@@ -341,7 +336,7 @@ namespace AsyncSocketServer
                     }
                     else
                     {
-                        throw ex; // any serious error occurr  
+                        throw; // any serious error occurr  
                     }
                 }
             } while (sent < size);
@@ -356,7 +351,7 @@ namespace AsyncSocketServer
         {
             if (e.SocketError == SocketError.Success)
             {
-                Socket s = (Socket)e.UserToken;
+                var s = (Socket)e.UserToken;
 
                 //TODO  
             }
@@ -380,32 +375,30 @@ namespace AsyncSocketServer
             if (e.SocketError == SocketError.Success)//if (e.BytesTransferred > 0 && e.SocketError == SocketError.Success)  
             {
                 // 检查远程主机是否关闭连接  
-                if (e.BytesTransferred > 0)
+                if (e.BytesTransferred <= 0) return;
+                var s = (Socket)e.UserToken;
+                //判断所有需接收的数据是否已经完成  
+                if (s.Available == 0)
                 {
-                    Socket s = (Socket)e.UserToken;
-                    //判断所有需接收的数据是否已经完成  
-                    if (s.Available == 0)
-                    {
-                        //从侦听者获取接收到的消息。   
-                        //String received = Encoding.ASCII.GetString(e.Buffer, e.Offset, e.BytesTransferred);  
-                        //echo the data received back to the client  
-                        //e.SetBuffer(e.Offset, e.BytesTransferred);  
+                    //从侦听者获取接收到的消息。   
+                    //String received = Encoding.ASCII.GetString(e.Buffer, e.Offset, e.BytesTransferred);  
+                    //echo the data received back to the client  
+                    //e.SetBuffer(e.Offset, e.BytesTransferred);  
 
-                        byte[] data = new byte[e.BytesTransferred];
-                        Array.Copy(e.Buffer, e.Offset, data, 0, data.Length);//从e.Buffer块中复制数据出来，保证它可重用  
+                    var data = new byte[e.BytesTransferred];
+                    Array.Copy(e.Buffer, e.Offset, data, 0, data.Length);//从e.Buffer块中复制数据出来，保证它可重用  
 
-                        string info = Encoding.Default.GetString(data);
-                        Log4Debug(string.Format("收到 {0} 数据为 {1}", s.RemoteEndPoint.ToString(), info));
-                        //TODO 处理数据  
+                    var info = Encoding.Default.GetString(data);
+                    Log4Debug($"收到 {s.RemoteEndPoint} 数据为 {info}");
+                    //TODO 处理数据  
 
-                        //增加服务器接收的总字节数。  
-                    }
+                    //增加服务器接收的总字节数。  
+                }
 
-                    if (!s.ReceiveAsync(e))//为接收下一段数据，投递接收请求，这个函数有可能同步完成，这时返回false，并且不会引发SocketAsyncEventArgs.Completed事件  
-                    {
-                        //同步接收时处理接收完成事件  
-                        ProcessReceive(e);
-                    }
+                if (!s.ReceiveAsync(e))//为接收下一段数据，投递接收请求，这个函数有可能同步完成，这时返回false，并且不会引发SocketAsyncEventArgs.Completed事件  
+                {
+                    //同步接收时处理接收完成事件  
+                    ProcessReceive(e);
                 }
             }
             else
@@ -448,8 +441,8 @@ namespace AsyncSocketServer
         /// <param name="e">SocketAsyncEventArg associated with the completed send/receive operation.</param>  
         private void CloseClientSocket(SocketAsyncEventArgs e)
         {
-            Log4Debug(string.Format("客户 {0} 断开连接!", ((Socket)e.UserToken).RemoteEndPoint.ToString()));
-            Socket s = e.UserToken as Socket;
+            Log4Debug($"客户 {((Socket)e.UserToken).RemoteEndPoint} 断开连接!");
+            var s = (Socket)e.UserToken;
             CloseClientSocket(s, e);
         }
 
@@ -497,25 +490,20 @@ namespace AsyncSocketServer
         /// to release only unmanaged resources.</param>  
         protected virtual void Dispose(bool disposing)
         {
-            if (!disposed)
+            if (_disposed) return;
+            if (disposing)
             {
-                if (disposing)
+                try
                 {
-                    try
-                    {
-                        Stop();
-                        if (_serverSock != null)
-                        {
-                            _serverSock = null;
-                        }
-                    }
-                    catch (SocketException ex)
-                    {
-                        //TODO 事件  
-                    }
+                    Stop();
+                    _serverSock = null;
                 }
-                disposed = true;
+                catch (SocketException)
+                {
+                    //TODO 事件  
+                }
             }
+            _disposed = true;
         }
         #endregion
 

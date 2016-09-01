@@ -2,11 +2,11 @@
 using System.Collections.Generic;
 using System.Net.Sockets;
 
-namespace AsyncSocketServer
+namespace AsyncSocketServer.Core
 {
     public class SocketAsyncEventArgsPool
     {
-        Stack<SocketAsyncEventArgs> m_pool;
+        private readonly Stack<SocketAsyncEventArgs> _mPool;
 
         // Initializes the object pool to the specified size
         //
@@ -14,7 +14,7 @@ namespace AsyncSocketServer
         // SocketAsyncEventArgs objects the pool can hold
         public SocketAsyncEventArgsPool(int capacity)
         {
-            m_pool = new Stack<SocketAsyncEventArgs>(capacity);
+            _mPool = new Stack<SocketAsyncEventArgs>(capacity);
         }
 
         // Add a SocketAsyncEventArg instance to the pool
@@ -23,10 +23,10 @@ namespace AsyncSocketServer
         // to add to the pool
         public void Push(SocketAsyncEventArgs item)
         {
-            if (item == null) { throw new ArgumentNullException("Items added to a SocketAsyncEventArgsPool cannot be null"); }
-            lock (m_pool)
+            if (item == null) { throw new ArgumentNullException($"Items added to a SocketAsyncEventArgsPool cannot be null"); }
+            lock (_mPool)
             {
-                m_pool.Push(item);
+                _mPool.Push(item);
             }
         }
 
@@ -34,16 +34,13 @@ namespace AsyncSocketServer
         // and returns the object removed from the pool
         public SocketAsyncEventArgs Pop()
         {
-            lock (m_pool)
+            lock (_mPool)
             {
-                return m_pool.Pop();
+                return _mPool.Pop();
             }
         }
 
         // The number of SocketAsyncEventArgs instances in the pool
-        public int Count
-        {
-            get { return m_pool.Count; }
-        }
+        public int Count => _mPool.Count;
     }
 }

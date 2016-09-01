@@ -1,22 +1,22 @@
 ﻿using System.Collections.Generic;
 using System.Net.Sockets;
 
-namespace AsyncSocketServer
+namespace AsyncSocketServer.Core
 {
     public class BufferManager
     {
-        int m_numBytes;                 // the total number of bytes controlled by the buffer pool
-        byte[] m_buffer;                // the underlying byte array maintained by the Buffer Manager
-        Stack<int> m_freeIndexPool;     // 
-        int m_currentIndex;
-        int m_bufferSize;
+        private readonly int _mNumBytes;                 // the total number of bytes controlled by the buffer pool
+        private byte[] _mBuffer;                // the underlying byte array maintained by the Buffer Manager
+        private readonly Stack<int> _mFreeIndexPool;     // 
+        private int _mCurrentIndex;
+        private readonly int _mBufferSize;
 
         public BufferManager(int totalBytes, int bufferSize)
         {
-            m_numBytes = totalBytes;
-            m_currentIndex = 0;
-            m_bufferSize = bufferSize;
-            m_freeIndexPool = new Stack<int>();
+            _mNumBytes = totalBytes;
+            _mCurrentIndex = 0;
+            _mBufferSize = bufferSize;
+            _mFreeIndexPool = new Stack<int>();
         }
 
         // Allocates buffer space used by the buffer pool
@@ -24,7 +24,7 @@ namespace AsyncSocketServer
         {
             // create one big large buffer and divide that 
             // out to each SocketAsyncEventArg object
-            m_buffer = new byte[m_numBytes];
+            _mBuffer = new byte[_mNumBytes];
         }
 
         // Assigns a buffer from the buffer pool to the 
@@ -34,18 +34,18 @@ namespace AsyncSocketServer
         public bool SetBuffer(SocketAsyncEventArgs args)
         {
 
-            if (m_freeIndexPool.Count > 0)
+            if (_mFreeIndexPool.Count > 0)
             {
-                args.SetBuffer(m_buffer, m_freeIndexPool.Pop(), m_bufferSize);
+                args.SetBuffer(_mBuffer, _mFreeIndexPool.Pop(), _mBufferSize);
             }
             else
             {
-                if ((m_numBytes - m_bufferSize) < m_currentIndex)
+                if ((_mNumBytes - _mBufferSize) < _mCurrentIndex)
                 {
                     return false;
                 }
-                args.SetBuffer(m_buffer, m_currentIndex, m_bufferSize);
-                m_currentIndex += m_bufferSize;
+                args.SetBuffer(_mBuffer, _mCurrentIndex, _mBufferSize);
+                _mCurrentIndex += _mBufferSize;
             }
             return true;
         }
@@ -54,7 +54,7 @@ namespace AsyncSocketServer
         // This frees the buffer back to the buffer pool
         public void FreeBuffer(SocketAsyncEventArgs args)
         {
-            m_freeIndexPool.Push(args.Offset);
+            _mFreeIndexPool.Push(args.Offset);
             args.SetBuffer(null, 0, 0);
         }
     }

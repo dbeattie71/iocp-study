@@ -10,12 +10,12 @@ namespace AsyncSocketClient
         /// <summary>  
         /// 连接服务器的socket  
         /// </summary>  
-        private Socket _clientSock;
+        private readonly Socket _clientSock;
 
         /// <summary>  
         /// 用于服务器执行的互斥同步对象  
         /// </summary>  
-        private static Mutex mutex = new Mutex();
+        private static readonly Mutex Mutex = new Mutex();
         /// <summary>  
         /// Socket连接标志  
         /// </summary>  
@@ -23,8 +23,7 @@ namespace AsyncSocketClient
 
         private const int ReceiveOperation = 1, SendOperation = 0;
 
-        private static AutoResetEvent[] autoSendReceiveEvents = new AutoResetEvent[]
-         {
+        private static readonly AutoResetEvent[] AutoSendReceiveEvents = {
             new AutoResetEvent(false),
             new AutoResetEvent(false)
          };
@@ -32,7 +31,7 @@ namespace AsyncSocketClient
         /// <summary>  
         /// 服务器监听端点  
         /// </summary>  
-        private IPEndPoint _remoteEndPoint;
+        private readonly IPEndPoint _remoteEndPoint;
 
         public IocpClient(IPEndPoint local, IPEndPoint remote)
         {
@@ -47,12 +46,14 @@ namespace AsyncSocketClient
         /// </summary>  
         public void Connect()
         {
-            SocketAsyncEventArgs connectArgs = new SocketAsyncEventArgs();
+            var connectArgs = new SocketAsyncEventArgs
+            {
+                UserToken = _clientSock,
+                RemoteEndPoint = _remoteEndPoint
+            };
 
-            connectArgs.UserToken = _clientSock;
-            connectArgs.RemoteEndPoint = _remoteEndPoint;
-            connectArgs.Completed += new EventHandler<SocketAsyncEventArgs>(OnConnected);
-            mutex.WaitOne();
+            connectArgs.Completed += OnConnected;
+            Mutex.WaitOne();
             if (!_clientSock.ConnectAsync(connectArgs))//异步连接  
             {
                 ProcessConnected(connectArgs);
@@ -66,7 +67,7 @@ namespace AsyncSocketClient
         /// <param name="e"></param>  
         void OnConnected(object sender, SocketAsyncEventArgs e)
         {
-            mutex.ReleaseMutex();
+            Mutex.ReleaseMutex();
             //设置Socket已连接标志。   
             _connected = (e.SocketError == SocketError.Success);
         }
@@ -88,12 +89,12 @@ namespace AsyncSocketClient
         /// <param name="data"></param>  
         public void Send(byte[] data)
         {
-            SocketAsyncEventArgs asyniar = new SocketAsyncEventArgs();
-            asyniar.Completed += new EventHandler<SocketAsyncEventArgs>(OnSendComplete);
+            var asyniar = new SocketAsyncEventArgs();
+            asyniar.Completed += OnSendComplete;
             asyniar.SetBuffer(data, 0, data.Length);
             asyniar.UserToken = _clientSock;
             asyniar.RemoteEndPoint = _remoteEndPoint;
-            autoSendReceiveEvents[SendOperation].WaitOne();
+            AutoSendReceiveEvents[SendOperation].WaitOne();
             if (!_clientSock.SendAsync(asyniar))//投递发送请求，这个函数有可能同步发送出去，这时返回false，并且不会引发SocketAsyncEventArgs.Completed事件  
             {
                 // 同步发送时处理发送完成事件  
@@ -109,7 +110,7 @@ namespace AsyncSocketClient
         private void OnSendComplete(object sender, SocketAsyncEventArgs e)
         {
             //发出发送完成信号。   
-            autoSendReceiveEvents[SendOperation].Set();
+            AutoSendReceiveEvents[SendOperation].Set();
             ProcessSend(e);
         }
 
@@ -131,12 +132,12 @@ namespace AsyncSocketClient
         public void StartRecive(SocketAsyncEventArgs e)
         {
             //准备接收。   
-            Socket s = e.UserToken as Socket;
-            byte[] receiveBuffer = new byte[255];
+            var s = e.UserToken as Socket;
+            var receiveBuffer = new byte[255];
             e.SetBuffer(receiveBuffer, 0, receiveBuffer.Length);
-            e.Completed += new EventHandler<SocketAsyncEventArgs>(OnReceiveComplete);
-            autoSendReceiveEvents[ReceiveOperation].WaitOne();
-            if (!s.ReceiveAsync(e))
+            e.Completed += OnReceiveComplete;
+            AutoSendReceiveEvents[ReceiveOperation].WaitOne();
+            if (s != null && !s.ReceiveAsync(e))
             {
                 ProcessReceive(e);
             }
@@ -150,7 +151,7 @@ namespace AsyncSocketClient
         private void OnReceiveComplete(object sender, SocketAsyncEventArgs e)
         {
             //发出接收完成信号。   
-            autoSendReceiveEvents[ReceiveOperation].Set();
+            AutoSendReceiveEvents[ReceiveOperation].Set();
             ProcessReceive(e);
         }
 
@@ -199,24 +200,22 @@ namespace AsyncSocketClient
 
         private void ProcessError(SocketAsyncEventArgs e)
         {
-            Socket s = e.UserToken as Socket;
-            if (s.Connected)
+            var s = e.UserToken as Socket;
+            if (!s.Connected) throw new SocketException((int) e.SocketError);
+            //关闭与客户端关联的Socket  
+            try
             {
-                //关闭与客户端关联的Socket  
-                try
+                s.Shutdown(SocketShutdown.Both);
+            }
+            catch (Exception)
+            {
+                //如果客户端处理已经关闭，抛出异常   
+            }
+            finally
+            {
+                if (s.Connected)
                 {
-                    s.Shutdown(SocketShutdown.Both);
-                }
-                catch (Exception)
-                {
-                    //如果客户端处理已经关闭，抛出异常   
-                }
-                finally
-                {
-                    if (s.Connected)
-                    {
-                        s.Close();
-                    }
+                    s.Close();
                 }
             }
             //抛出SocketException   
@@ -229,9 +228,9 @@ namespace AsyncSocketClient
         /// </summary>  
         public void Dispose()
         {
-            mutex.Close();
-            autoSendReceiveEvents[SendOperation].Close();
-            autoSendReceiveEvents[ReceiveOperation].Close();
+            Mutex.Close();
+            AutoSendReceiveEvents[SendOperation].Close();
+            AutoSendReceiveEvents[ReceiveOperation].Close();
             if (_clientSock.Connected)
             {
                 _clientSock.Close();
