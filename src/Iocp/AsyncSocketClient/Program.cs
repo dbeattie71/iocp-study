@@ -7,8 +7,8 @@ namespace AsyncSocketClient
     {
         static void Main(string[] args)
         {
-            IPAddress remote = IPAddress.Parse("192.168.3.4");
-            var c = new Client(8088, remote);
+            IPAddress remote = IPAddress.Parse("127.0.0.1");
+            var c = new Client(9099, remote);
 
             c.connect();
             Console.WriteLine("服务器连接成功!");
