@@ -40,7 +40,7 @@ namespace AsyncSocketServer.Core
             }
             else
             {
-                if ((_mNumBytes - _mBufferSize) < _mCurrentIndex)
+                if (_mNumBytes - _mBufferSize < _mCurrentIndex)
                 {
                     return false;
                 }
