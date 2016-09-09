@@ -117,7 +117,6 @@ namespace AsyncSocketServer.Core
 
         #endregion
 
-
         #region 初始化  
 
         /// <summary>  
@@ -199,7 +198,6 @@ namespace AsyncSocketServer.Core
         }
 
         #endregion
-
 
         #region Accept  
 
