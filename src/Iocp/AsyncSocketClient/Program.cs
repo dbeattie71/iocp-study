@@ -10,7 +10,7 @@ namespace AsyncSocketClient
             IPAddress remote = IPAddress.Parse("127.0.0.1");
             var c = new Client(9099, remote);
 
-            c.connect();
+            c.Connect();
             Console.WriteLine("服务器连接成功!");
             while (true)
             {
@@ -18,9 +18,9 @@ namespace AsyncSocketClient
                 string msg = Console.ReadLine();
                 if (msg == "exit")
                     break;
-                c.send(msg);
+                c.Send(msg);
             }
-            c.disconnect();
+            c.Disconnect();
             Console.ReadLine();
         }
     }

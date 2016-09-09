@@ -6,31 +6,31 @@ namespace AsyncSocketClient
 {
     public class Client
     {
-        public TcpClient _client;
+        private TcpClient _client;
 
-        public int port;
+        public int Port;
 
-        public IPAddress remote;
+        public IPAddress Remote;
 
         public Client(int port, IPAddress remote)
         {
 
-            this.port = port;
-            this.remote = remote;
+            Port = port;
+            Remote = remote;
         }
 
-        public void connect()
+        public void Connect()
         {
-            this._client = new TcpClient();
-            _client.Connect(remote, port);
+            _client = new TcpClient();
+            _client.Connect(Remote, Port);
         }
-        public void disconnect()
+        public void Disconnect()
         {
             _client.Close();
         }
-        public void send(string msg)
+        public void Send(string msg)
         {
-            byte[] data = Encoding.Default.GetBytes(msg);
+            var data = Encoding.Default.GetBytes(msg);
             _client.GetStream().Write(data, 0, data.Length);
         }
     }
