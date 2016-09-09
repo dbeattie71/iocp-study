@@ -9,6 +9,7 @@ namespace AsyncSocketServer.Core
     public class Server : IDisposable
     {
         private const int OpsToPreAlloc = 2;
+
         #region Fields  
         /// <summary>  
         /// 服务器程序允许的最大客户端连接数  
